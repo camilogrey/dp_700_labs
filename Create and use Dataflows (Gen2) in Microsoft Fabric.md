@@ -1,89 +1,64 @@
-# Crear y usar Dataflows (Gen2) en Microsoft Fabric
+# Laboratorio: Creación y uso de Dataflows (Gen2) en Microsoft Fabric
 
-En Microsoft Fabric, los **Dataflows (Gen2)** se conectan a diversas fuentes de datos y realizan transformaciones en Power Query Online. Luego, pueden utilizarse en Data Pipelines para ingerir datos en un Lakehouse u otro almacén analítico, o para definir un conjunto de datos para un informe de Power BI.
+### 1. Creación del workspace
+Accedí a Microsoft Fabric mediante el navegador e inicié sesión con mis credenciales. En la barra lateral izquierda, seleccioné el icono de **Workspaces** y creé un nuevo workspace con un nombre de mi elección, asegurándome de seleccionar un modo de licencia que incluyera capacidad de Fabric (usé la opción de prueba). El workspace quedó vacío, listo para comenzar.
 
-Este laboratorio está diseñado para introducir los diferentes elementos de Dataflows (Gen2) y no para crear una solución compleja que pueda existir en una empresa. Este laboratorio toma aproximadamente **30 minutos** en completarse.
+### 2. Creación del lakehouse
+Desde el workspace, en la barra lateral izquierda, seleccioné **Create** y, dentro de la sección **Data Engineering**, elegí **Lakehouse**. Asigné el nombre **`dataflowLH`** y esperé unos minutos hasta que se creara. El lakehouse apareció con la estructura de carpetas **Tables** y **Files**, listo para recibir datos.
+
+> ![Lakehouse recién creado](img_dataflowgen2/1.%20New%20Lakehouse%20inside%20workspace.png)
+
+### 3. Inicio de la creación del Dataflow (Gen2)
+En la página principal del lakehouse, desde el menú **Get data**, seleccioné **New Dataflow Gen2**. Tras unos segundos, se abrió el editor de Power Query, donde comenzaría a definir el proceso de extracción, transformación y carga (ETL).
+
+> ![Opción New Dataflow Gen2 en el menú Get data](img_dataflowgen2/2.%20get%20data%20new%20dataflow%20gen2.png)
+
+### 4. Importación de datos desde un archivo CSV
+Dentro del editor de Power Query, en la ventana de inicio, elegí la opción **Import from a Text/CSV file** para conectar con el origen de datos.
+
+> ![Selección de importación desde Text/CSV](img_dataflowgen2/3.%20In%20dataglow%20gen%202%20import%20csv.png)
+
+A continuación, configuré la conexión con los siguientes parámetros:
+- **File path or URL**: `https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/orders.csv`
+- **Connection**: Creé una nueva conexión con el nombre `connection1`
+- **Data gateway**: (ninguno)
+- **Authentication kind**: `Anonymous`
+
+> ![Configuración de la conexión al CSV](img_dataflowgen2/4.%20connect%20csv%20data%20with%20dataflow%20gen2.png)
+
+Hice clic en **Next** para previsualizar los datos y verificar que se cargaran correctamente. La vista previa mostró las columnas esperadas (`SalesOrderID`, `OrderDate`, `CustomerID`, etc.).
+
+> ![Vista previa de los datos del CSV](img_dataflowgen2/5.%20data%20preview.png)
+
+Finalmente, seleccioné **Create** para que el dataflow importara los datos y generara la consulta base.
+
+### 5. Adición de una columna personalizada
+Para enriquecer los datos, necesitaba extraer el número de mes de la columna `OrderDate`. En la cinta de opciones del editor, fui a la pestaña **Add column** y seleccioné **Custom column**.
+
+> ![Opción Custom column en el menú Add column](img_dataflowgen2/6.%20create%20a%20custom%20column%20in%20data%20table.png)
+
+En el cuadro de diálogo, configuré:
+- **New column name**: `MonthNo`
+- **Data type**: `Whole number`
+- **Custom column formula**: `= Date.Month([OrderDate])`
+
+> ![Configuración de la columna personalizada](img_dataflowgen2/7.%20new%20columns%20with%20some%20parameters.png)
+
+Al hacer clic en **OK**, la nueva columna se agregó a la tabla, y el paso correspondiente se registró en **Applied Steps** en el panel de configuración de la consulta.
+
+> ![Tabla con la nueva columna MonthNo y los pasos aplicados](img_dataflowgen2/8.%20new%20column%20done.png)
+
+### 6. Verificación y ajuste de tipos de datos
+Para asegurar que las columnas tuvieran el tipo correcto, verifiqué que:
+- La columna `OrderDate` estuviera configurada como tipo **Date**.
+- La columna `MonthNo` estuviera configurada como tipo **Whole number**.
+
+En el editor, seleccioné la columna `OrderDate` y, desde el menú desplegable de tipo de datos, elegí **Date**. De manera similar, confirmé que `MonthNo` tuviera el tipo **Whole number** (aunque la imagen se centra en `OrderDate`, el laboratorio indica que ambos deben revisarse).
+
+> ![Cambio del tipo de datos de OrderDate a Date](img_dataflowgen2/9.%20change%20data%20type%20orderdate%20column.png)
+
+Con estos pasos, el dataflow quedó configurado con la transformación necesaria. Los datos estaban listos para ser cargados en el lakehouse o utilizados en un pipeline posterior.
 
 ---
 
-## Requisitos previos
-Necesitas acceso a una capacidad de Fabric de pago o de prueba (Trial) para completar este ejercicio. Para obtener información sobre la prueba gratuita de Fabric, consulta la documentación oficial de Microsoft.
-
----
-
-## 1. Crear un área de trabajo (Workspace)
-
-1. Navega a la página de inicio de Microsoft Fabric en un navegador: `https://app.fabric.microsoft.com/home?experience=fabric` e inicia sesión con tus credenciales.
-2. En la barra de menú de la izquierda, selecciona **Workspaces** (el ícono se asemeja a una carpeta 🗇).
-3. Crea un nuevo workspace con el nombre de tu elección, seleccionando un modo de licencia que incluya capacidad de Fabric (Trial, Premium o Fabric).
-4. Cuando tu nuevo workspace se abra, debería estar vacío.
-
-## 2. Crear un Lakehouse
-
-Una vez que tengas el workspace, es momento de crear un Lakehouse de datos en el cual ingerirás los datos.
-
-1. En la barra de menú de la izquierda, selecciona **Create**.
-2. En la página de **New**, bajo la sección **Data Engineering**, selecciona **Lakehouse**.
-3. Asígnale un nombre único de tu elección. En las imágenes de ejemplo de este laboratorio se utiliza el nombre **`dataflowLH`**.
-4. Después de aproximadamente un minuto, se creará un nuevo Lakehouse vacío.
-
-## 3. Crear un Dataflow (Gen2) para ingerir datos
-
-Ahora que tienes un Lakehouse, necesitas ingerir datos en él. Una forma de hacerlo es definir un Dataflow que encapsule un proceso de extracción, transformación y carga (ETL).
-
-1. En la página de inicio de tu Lakehouse, selecciona el botón **Get data** y luego elige **New Dataflow Gen2**.
-   *(Observa la **Imagen 1** y la **Imagen 2** para ver la ubicación exacta de esta opción en la interfaz).*
-2. Se abrirá el editor de Power Query para el nuevo Dataflow. En el menú de inicio, selecciona **Import from a Text/CSV file**.
-   *(Observa la **Imagen 3**).*
-3. Crea una nueva conexión con la siguiente configuración:
-   * **Link to file:** Seleccionado.
-   * **File path or URL:** `https://raw.githubusercontent.com/MicrosoftLearning/dp-data/main/orders.csv`
-   * **Connection:** Create new connection.
-   * **Connection name:** Especifica un nombre único, por ejemplo `connection1`.
-   * **Data gateway:** (ninguno).
-   * **Authentication kind:** Anonymous.
-   *(Observa la **Imagen 4**).*
-4. Selecciona **Next** para obtener una vista previa de los datos del archivo y luego haz clic en **Create** para confirmar la fuente de datos.
-   *(Observa la **Imagen 5** para ver la vista previa de los datos).*
-
-## 4. Transformaciones en el editor Power Query
-
-El editor de Power Query mostrará la fuente de datos y un conjunto inicial de pasos de consulta para dar formato a los datos.
-
-### Crear una columna personalizada (Custom Column)
-
-1. En la cinta de opciones de la barra de herramientas, selecciona la pestaña **Add column**.
-2. Luego selecciona **Custom column** para crear una nueva columna.
-   *(Observa la **Imagen 6**).*
-3. En el panel de configuración de la columna personalizada:
-   * **New column name:** `MonthNo`
-   * **Data type:** Whole number
-   * **Custom column formula:** `Date.Month([OrderDate])`
-   *(Observa la **Imagen 7**).*
-4. Haz clic en **OK** para crear la columna.
-5. Nota cómo el paso para agregar la columna personalizada se añade a la consulta (en el panel de la derecha, bajo "Applied steps"). La columna resultante se muestra en el panel de datos.
-   *(Observa la **Imagen 8**, el resultado es una nueva columna `MonthNo` con valores numéricos de mes).*
-
-### Cambiar tipos de datos
-
-1. Verifica y confirma que el tipo de datos para la columna **`OrderDate`** esté configurado como **Date**.
-   * Selecciona la columna `OrderDate` y cambia su tipo de datos a Date en la pestaña **Transform** si no lo está ya.
-   *(Observa la **Imagen 9** donde se selecciona `OrderDate` y se cambia su tipo de datos a `Date` usando el menú desplegable).*
-2. Confirma que la columna recién creada `MonthNo` tenga el tipo de datos **Whole Number**.
-
-### Nota adicional sobre el Editor Power Query
-En el panel de configuración de consultas (Query Settings) a la derecha, observa que los **Applied Steps** incluyen cada paso de transformación. Estos pasos se pueden mover hacia arriba o hacia abajo, editar seleccionando el ícono de engranaje (⚙️), y puedes seleccionar cada paso para ver cómo se aplican las transformaciones en el panel de vista previa. También puedes activar el **Diagram flow** para obtener una vista visual del diagrama de los pasos.
-
-## 📸 Imágenes del desarrollo del laboratorio
-
-A continuación se listan las capturas adjuntas que ilustran el proceso:
-
-*   **Imagen 1:** Acceso a Dataflows Gen2 desde el menú lateral izquierdo y creación del Dataflow desde el Lakehouse (`dataflowLH`).
-*   **Imagen 2:** Menú desplegable "Get data" dentro del Lakehouse seleccionando la opción "New Dataflow Gen2".
-*   **Imagen 3:** Interfaz del editor de Power Query, selección de la fuente de datos "Import from a Text/CSV file".
-*   **Imagen 4:** Configuración de credenciales de conexión (URL del CSV, autenticación Anónima).
-*   **Imagen 5:** Panel de previsualización de datos antes de crear la consulta.
-*   **Imagen 6:** Selección de la opción "Custom column" dentro de la pestaña "Add column" de Power Query.
-*   **Imagen 7:** Configuración de la columna personalizada: nombre `MonthNo`, tipo `Whole number` y fórmula `Date.Month([OrderDate])`.
-*   **Imagen 8:** Resultado final en el editor, con la nueva columna `MonthNo` y los pasos aplicados visibles en el panel derecho.
-*   **Imagen 9:** Cambio del tipo de datos de la columna `OrderDate` a `Date` desde la pestaña "Transform".
+**Nota :** Este laboratorio introdujo los conceptos básicos de Dataflows Gen2, mostrando cómo conectar a un origen CSV, aplicar transformaciones (como la adición de una columna calculada) y gestionar los tipos de datos. El dataflow creado puede ahora ser utilizado en pipelines de datos o como origen para modelos semánticos.
