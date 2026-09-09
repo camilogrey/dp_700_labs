@@ -452,7 +452,7 @@ WHERE s.name = 'gold'
 ORDER BY t.name;
 ```
 
-![Verificacion de tablas con su esquema estrella](end_2_end_img/14.%20Crea%20la%20estructura%20del%20modelo%20estrella%20Ejecuta%20DDL%20(T-SQL)%20para%20definir%20el%20esquema%20gold%20y%20la%20arquitectura%20analítica%20final%20del%20Data%20Warehouse.png)
+![Verificacion de tablas con su esquema estrella en la capa oro](end_2_end_img/14.%20Crea%20la%20estructura%20del%20modelo%20estrella%20Ejecuta%20DDL%20(T-SQL)%20para%20definir%20el%20esquema%20gold%20y%20la%20arquitectura%20analítica%20final%20del%20Data%20Warehouse.png)
 
 Deberías ver las cinco tablas: `Dim_Date`, `Dim_Product`, `Dim_Customer`, `Dim_Store`, `Fact_Sales`.
 
