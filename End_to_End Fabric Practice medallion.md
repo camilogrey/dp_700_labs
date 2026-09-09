@@ -194,6 +194,8 @@ Objetivo: corregir errores, estandarizar formatos, eliminar duplicados y escribi
 
 ![Confirmacion de a creacion de tablas a parti del codigo](7)
 
+![Creacion del notebook en el silver layer](end_2_end_img/7.%20create%20a%20Notebook%20and%20asociate%20it%20with%20silver%20lakehouse.png)
+
 3. Ejecuta las celdas siguientes.
 
 ```python
@@ -223,6 +225,7 @@ Carga los datos en memoria: Lee los 4 archivos de la capa Bronze (productos, cli
 
 Verifica la ingesta: Cuenta e imprime en consola el número total de registros presentes en el DataFrame de ventas (b_ven) para confirmar que la lectura fue exitosa.
 
+![Ejecucion del script 1](end_2_end_img/8.%20script%20execution%20.png)
 
 ```python
 # Celda 2: limpiar productos y clientes
@@ -268,6 +271,8 @@ Elimina tiendas duplicadas basándose en StoreCode.
 Muestra resultados: Despliega en pantalla el DataFrame de productos ya limpio (s_prod).
 
 
+![Ejecucion del script 2](end_2_end_img/9.%202%20cell%20execution.png)
+
 ```python
 # Celda 3: limpiar ventas — el trabajo de verdad
 s_ven = (b_ven
@@ -294,6 +299,9 @@ display(s_ven.limit(10))
 ```
 **Nota :**Elimina duplicados y registros de prueba: Filtra las líneas repetidas según OrderNumber y OrderLine, y remueve las transacciones de prueba que empiezan por "TEST-".Estandariza las fechas: Parsea las cadenas de texto con distintos formatos (yyyy-MM-dd en pedidos y dd/MM/yyyy en envíos) y las convierte al tipo nativo date.Tipifica importes monetarios: Convierte los valores numéricos de precio y descuento a tipo decimal(10,2) para evitar errores de precisión asociados a los tipos de punto flotante (float).Calcula métricas financieras: Agrega dos columnas derivadas: GrossAmount (monto bruto: cantidad $\times$ precio) y NetAmount (monto neto: monto bruto $-$ descuento).Aplica reglas de integridad: Descarta cualquier fila que carezca de fecha de pedido o de código de producto (isNotNull()).Verifica el resultado: Muestra el conteo de filas del DataFrame limpio en la consola e imprime una vista previa de los primeros 10 registros.
 
+
+![Ejecucion del script 3](end_2_end_img/10.%20cell%203%20execution.png)
+
 ```python
 # Celda 4: escribir las tablas Delta de Silver
 for nombre, df in [("dim_producto_src", s_prod), ("dim_cliente_src", s_cli),
@@ -315,6 +323,8 @@ Imprime confirmación: Muestra un mensaje en la consola por cada tabla guardada 
 
 > 📊 **Por qué `decimal` y no `float` para importes:** `float` es un tipo aproximado; sumar millones de importes acumula error de redondeo. Es un error de diseño que aparece en auditorías reales. Además, `decimal` es un tipo soportado tanto en Delta como en Fabric Warehouse.
 > 
+
+![Verificacion de tablas ya limpias en el silver layer](end_2_end_img/11.%20clean%20tables%20created%20.png)
 
 ## 3. Capa Gold — construir el star schema en el Warehouse
 
