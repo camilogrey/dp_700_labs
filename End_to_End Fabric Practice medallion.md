@@ -37,7 +37,7 @@ Aplicamos el **Patrón 2** de Microsoft: Bronze y Silver como lakehouses, **Gold
 
 **Punto de control 0:** en el workspace debes ver tres ítems (`LH_Bronze`, `LH_Silver`, `WH_Gold`) más los dos *SQL analytics endpoint* asociados a los lakehouses.
 
-> ![Cambio del tipo de datos de OrderDate a Date](1)
+> ![Creacion de los 3 items de cada capa medallion ](end_2_end_img/1.%203%20layers%20created%202%20lakehouse%20and%201%20warehose.png)
 ---
 
 ## 1. Capa Bronze — generar e ingerir los datos crudos
@@ -51,9 +51,9 @@ Los datos incluyen **suciedad deliberada** — duplicados, nulos, formatos de fe
 1. **New item → Notebook** → nombre `NB_01_Bronze_Ingesta`.
 2. En el panel **Explorer** izquierdo, **Add data items → From OneLake Catalog** → selecciona `LH_Bronze`. Debe quedar como lakehouse por defecto.
 
-> ![Cambio del tipo de datos de OrderDate a Date](2)
-> ![Cambio del tipo de datos de OrderDate a Date](3)
-> ![Cambio del tipo de datos de OrderDate a Date](4)
+> ![Apertura de un Notebook en el layer bronze](end_2_end_img/2.%20open%20a%20notebook%20in%20bronze%20layer.png)
+> ![Creación de un Notebbok dentor de la capa bronze](end_2_end_img/3.%20create%20a%20notebook%20inside%20bronze%20layer.png)
+> ![Conecta el cuaderno al almacenamiento físico de lh_bronze](end_2_end_img/4.%20add%20data%20items%20in%20the%20notebook.png)
 
 3. Pega y ejecuta la celda siguiente.
 
@@ -154,8 +154,8 @@ for nombre, df in [("productos", df_prod), ("clientes", df_cli),
     print(f"✔{nombre}:{df.count()} filas escritas en{BASE}/{nombre}")
 ```
 
-![Cambio del tipo de datos de OrderDate a Date](5)
-![Cambio del tipo de datos de OrderDate a Date](6)
+![Ejecucion del codigo Pyspark](end_2_end_img/5.%20execute%20pyspark%20code%20in%20the%20bronze%20layer%20notebook.png)
+![Confirmacion de a creacion de tablas a parti del codigo](end_2_end_img/6.%20confirmation%20of%20code%20execution.png)
 
 **Punto de control 1:** en `LH_Bronze → Files → raw` deben aparecer cuatro carpetas. Ventas debe tener **1.225 filas** (1.200 + 15 duplicados + 10 de prueba).
 
