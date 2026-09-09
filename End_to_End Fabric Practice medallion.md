@@ -332,6 +332,8 @@ Aquí aplicamos **todo lo visto clases anteriores**: surrogate keys, special dim
 
 Abre `WH_Gold` → **New SQL query** 
 
+![Nueva consulta SQL en la gold layer](end_2_end_img/12.%20New%20sql%20query%20inn%20the%20gold%20layer%20warehouse.png)
+
 ### 3.1 Crear el esquema y las tablas
 
 ```sql
@@ -418,6 +420,28 @@ CREATE TABLE gold.Fact_Sales (
 GO
 ```
 
+**Nota :**Crea el esquema gold: Define una capa lógica para aislar las tablas analíticas del resto del sistema.
+
+Diseña las dimensiones (Star Schema):
+
+Dim_Date: Tabla de calendario con claves numéricas (YYYYMMDD).
+
+Dim_Product y Dim_Store: Dimensiones SCD Tipo 1 (sobrescriben cambios directamente).
+
+Dim_Customer: Dimensión SCD Tipo 2 (mantiene historial de cambios mediante fechas de validez y la bandera RecIsCurrent).
+
+Define la tabla de hechos (Fact_Sales):
+
+Establece la granularidad a una fila por línea de pedido.
+
+Almacena las claves foráneas de las dimensiones (Product_SK, Customer_SK, etc.).
+
+Contiene las métricas numéricas del negocio (Quantity, GrossAmount, NetAmount).
+
+En resumen Crea la estructura del modelo estrella (Star Schema): Ejecuta sentencias DDL (T-SQL) para definir el esquema gold y la arquitectura analítica final del Data Warehouse.
+
+![ejecucion de la celda 1](end_2_end_img/13.%20exe%20cell%201%20sql.png)
+
 Verificación rapida al terminar:
 
 ```sql
@@ -427,6 +451,8 @@ JOIN sys.schemas s ON s.schema_id = t.schema_id
 WHERE s.name = 'gold'
 ORDER BY t.name;
 ```
+
+![Verificacion de tablas con su esquema estrella](end_2_end_img/14.%20Crea%20la%20estructura%20del%20modelo%20estrella%20Ejecuta%20DDL%20(T-SQL)%20para%20definir%20el%20esquema%20gold%20y%20la%20arquitectura%20analítica%20final%20del%20Data%20Warehouse.png)
 
 Deberías ver las cinco tablas: `Dim_Date`, `Dim_Product`, `Dim_Customer`, `Dim_Store`, `Fact_Sales`.
 
@@ -473,6 +499,8 @@ SELECT COUNT(*) AS FilasDimDate FROM gold.Dim_Date;   -- esperado: 1462
 
 > 📅 **Por qué `YYYYMMDD`.** Es la excepción aceptada a la regla de "no dar significado a las surrogate keys": la clave es legible, ocupa un `int` y, sobre todo, **se puede calcular** durante la carga del fact sin necesidad de lookup.
 > 
+
+![poblar la dimension fecha](end_2_end_img/15.%20population%20the%20date%20dimension%20.png)
 
 ### 3.3 Cargar las dimensiones con special members
 
