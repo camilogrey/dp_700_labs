@@ -191,6 +191,9 @@ Objetivo: corregir errores, estandarizar formatos, eliminar duplicados y escribi
 
 1. **New item → Notebook** → nombre `NB_02_Silver_Limpieza`.
 2. Añade **`LH_Silver`** como lakehouse por defecto en el Explorer.
+
+![Confirmacion de a creacion de tablas a parti del codigo](7)
+
 3. Ejecuta las celdas siguientes.
 
 ```python
@@ -212,6 +215,14 @@ print(b_ven.count(), "líneas en bronze")
 
 > ⚠️ Si prefieres no escribir la ruta ABFS, añade también `LH_Bronze` al Explorer del notebook y usa el path relativo del lakehouse no predeterminado. La ruta ABFS es más explícita y menos frágil, por eso la usamos aquí.
 > 
+**Nota :**El script define la ruta de origen: Establece la ubicación ABFS hacia los archivos CSV crudos guardados previamente en la capa LH_Bronze (Files/raw).
+
+Crea una función de lectura (leer): Configura PySpark para importar los CSV detectando automáticamente los tipos de datos (inferSchema=True) y leyendo la primera fila como nombres de columna (header=True).
+
+Carga los datos en memoria: Lee los 4 archivos de la capa Bronze (productos, clientes, tiendas, ventas) y los convierte en DataFrames de PySpark (b_prod, b_cli, b_tie, b_ven).
+
+Verifica la ingesta: Cuenta e imprime en consola el número total de registros presentes en el DataFrame de ventas (b_ven) para confirmar que la lectura fue exitosa.
+
 
 ```python
 # Celda 2: limpiar productos y clientes
@@ -234,6 +245,28 @@ s_tie = b_tie.dropDuplicates(["StoreCode"])
 
 display(s_prod)
 ```
+**Nota :**Limpia productos (s_prod):
+
+Elimina códigos de producto duplicados.
+
+Reemplaza valores nulos en Subcategory por "Sin subcategoría" y en Brand por "Sin marca".
+
+Convierte el precio (ListPrice) al tipo de dato exacto decimal(10,2).
+
+Limpia clientes (s_cli):
+
+Elimina clientes duplicados.
+
+Rellena emails nulos con "desconocido@example.com".
+
+Crea la nueva columna FullName uniendo el nombre y apellido.
+
+Limpia tiendas (s_tie):
+
+Elimina tiendas duplicadas basándose en StoreCode.
+
+Muestra resultados: Despliega en pantalla el DataFrame de productos ya limpio (s_prod).
+
 
 ```python
 # Celda 3: limpiar ventas — el trabajo de verdad
@@ -259,6 +292,7 @@ s_ven = (b_ven
 print("Silver ventas:", s_ven.count(), "filas (esperado: 1200)")
 display(s_ven.limit(10))
 ```
+**Nota :**Elimina duplicados y registros de prueba: Filtra las líneas repetidas según OrderNumber y OrderLine, y remueve las transacciones de prueba que empiezan por "TEST-".Estandariza las fechas: Parsea las cadenas de texto con distintos formatos (yyyy-MM-dd en pedidos y dd/MM/yyyy en envíos) y las convierte al tipo nativo date.Tipifica importes monetarios: Convierte los valores numéricos de precio y descuento a tipo decimal(10,2) para evitar errores de precisión asociados a los tipos de punto flotante (float).Calcula métricas financieras: Agrega dos columnas derivadas: GrossAmount (monto bruto: cantidad $\times$ precio) y NetAmount (monto neto: monto bruto $-$ descuento).Aplica reglas de integridad: Descarta cualquier fila que carezca de fecha de pedido o de código de producto (isNotNull()).Verifica el resultado: Muestra el conteo de filas del DataFrame limpio en la consola e imprime una vista previa de los primeros 10 registros.
 
 ```python
 # Celda 4: escribir las tablas Delta de Silver
@@ -267,6 +301,15 @@ for nombre, df in [("dim_producto_src", s_prod), ("dim_cliente_src", s_cli),
     df.write.mode("overwrite").format("delta").saveAsTable(nombre)
     print(f"✔ Tabla Delta creada:{nombre}")
 ```
+**Nota :**Persiste los DataFrames limpios: Toma los DataFrames procesados de la capa Silver (s_prod, s_cli, s_tie, s_ven) y los guarda de forma permanente.
+
+Aplica el formato Delta Lake: Convierte los datos al formato estructurado Delta (.format("delta")), lo que habilita transacciones ACID, viajes en el tiempo (time travel) y mejor rendimiento de lectura.
+
+Crea tablas gestionadas en el Metastore: Usa .saveAsTable(nombre) para registrar las tablas en la capa Delta de LH_Silver, haciendo que aparezcan automáticamente dentro del catálogo bajo la sección Tables (como dim_producto_src, dim_cliente_src, dim_tienda_src y ventas).
+
+Sobrescribe ejecuciones previas: Utiliza .mode("overwrite") para reemplazar las tablas existentes con los datos limpios más recientes en caso de reejecutar el script.
+
+Imprime confirmación: Muestra un mensaje en la consola por cada tabla guardada con éxito.
 
 **Punto de control 2:** `LH_Silver → Tables` debe mostrar cuatro tablas Delta. `ventas` debe tener **1.200 filas** (se eliminaron 15 duplicados y 10 de prueba).
 
