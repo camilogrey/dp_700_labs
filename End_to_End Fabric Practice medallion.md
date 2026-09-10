@@ -664,6 +664,15 @@ CREATE VIEW gold.Dim_Order AS
 SELECT DISTINCT OrderNumber FROM gold.Fact_Sales;
 GO
 ```
+**Nota** Crea una vista analítica (Dim_Order): Genera una tabla virtual basada en la tabla de hechos gold.Fact_Sales.
+
+Extrae la dimensión degenerada (Degenerate Dimension): Obtiene los números de pedido únicos (OrderNumber) usando la cláusula DISTINCT.
+
+Propósito del diseño:
+
+Optimización del modelo: Evita agrandar la tabla de hechos guardando atributos específicos del pedido como cadenas de texto repetidas.
+
+Facilidad en reportes: Permite a los usuarios de Power BI o herramientas analíticas filtrar, contar o buscar pedidos específicos por su código sin impactar el rendimiento de la tabla principal de hechos.
 
 ## 4. Procedimientos de carga incremental y SCD tipo 2
 
