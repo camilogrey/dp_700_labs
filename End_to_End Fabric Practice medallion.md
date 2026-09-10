@@ -664,6 +664,9 @@ CREATE VIEW gold.Dim_Order AS
 SELECT DISTINCT OrderNumber FROM gold.Fact_Sales;
 GO
 ```
+
+![crea una vista (VIEW) de analitica ](end_2_end_img/1.6%20crea%20una%20vista%20de%20analitica.png)
+
 **Nota** Crea una vista analítica (Dim_Order): Genera una tabla virtual basada en la tabla de hechos gold.Fact_Sales.
 
 Extrae la dimensión degenerada (Degenerate Dimension): Obtiene los números de pedido únicos (OrderNumber) usando la cláusula DISTINCT.
