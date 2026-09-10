@@ -507,6 +507,10 @@ SELECT COUNT(*) AS FilasDimDate FROM gold.Dim_Date;   -- esperado: 1462
 El Warehouse lee las tablas Delta de `LH_Silver` mediante **consulta cross-database con nomenclatura de tres partes**. Requisito: ambos ítems en el **mismo workspace y misma región**.
 
 1. En el Explorer de `WH_Gold`, pulsa **+ Warehouses** y añade el **SQL analytics endpoint de `LH_Silver`**.
+
+![+ warehouse](end_2_end_img/1.1%20añadir%20el%20LH%20silver%20endpoint.png)
+![añadir el lh_silver endpoint](end_2_end_img/1.2.%20añadimos%20el%20LH%20silver.png)
+
 2. Ejecuta:
 
 ```sql
@@ -560,7 +564,12 @@ UNION ALL SELECT 'Store',    COUNT(*) FROM gold.Dim_Store
 UNION ALL SELECT 'Customer', COUNT(*) FROM gold.Dim_Customer;
 ```
 
+**Nota :** el script crea los Special Members (ID -1): Inserta un registro genérico ("Desconocido") en cada dimensión para evitar perder transacciones si una venta no encuentra su correspondencia en las tablas maestras.Genera Claves Subrogadas ($SK$): Usa ROW_NUMBER() para asignar identificadores numéricos secuenciales a cada producto, tienda y cliente (Product_SK, Store_SK, Customer_SK).Pobla las dimensiones desde Silver: Carga los datos limpios traídos de lh_silver dentro del esquema gold, aplicando las reglas del modelo dimensional:Dim_Product y Dim_Store: Carga directa con fecha de actualización.Dim_Customer: Inicializa la trazabilidad histórica (SCD Tipo 2) marcando todos los registros vigentes con la bandera RecIsCurrent = 1.Valida el proceso: Ejecuta un conteo final de filas (COUNT(*)) agrupado por dimensión para verificar que los datos se hayan cargado correctamente.
+
 **Punto de control 3:** Product = 10 (9 + Unknown), Store = 4, Customer = 7.
+
+![consulta de la capa silver desde la capa gold](end_2_end_img/1.3.%20resultado%20de%20la%20consulta%20del%20LH%20silver%20desde%20el%20LH%20gold.png)
+
 
 > 🔑 **Special dimension members.** La convención de Microsoft usa `0` = Missing, `-1` = Unknown, `-2` = N/A, `-3` = Error. Aquí usamos `-1` para todo por simplicidad. Su función es permitir que **todas las dimension keys del fact sean `NOT NULL`** sin perder filas de hechos cuando un lookup falla.
 > 
@@ -608,10 +617,14 @@ SELECT
 FROM gold.Fact_Sales;
 ```
 
+![poblacion de la fact table](end_2_end_img/1.4%20poblacion%20de%20la%20fact%20table.png)
+
 **Punto de control 4:** 1.200 filas y **cero** lookups fallidos.
 
 > ⚠️ **El punto crítico de toda la práctica.** Fabric Warehouse **admite** foreign keys pero **no las impone**. Si el lookup falla, no salta ningún error: acabas con datos silenciosamente incorrectos. Por eso esta consulta de auditoría no es opcional — es parte del proceso de carga. En producción se convierte en un paso del pipeline que falla si el umbral se supera.
 > 
+
+**nota**el script pobla la tabla de hechos (Fact_Sales): Transfiere las transacciones limpias desde LH_Silver.dbo.ventas hacia la capa Gold.Transforma Claves Naturales a Claves Subrogadas ($SK$): Realiza LEFT JOIN con las dimensiones de Gold para reemplazar los códigos de texto por identificadores numéricos:Fechas: Relaciona las fechas de pedido y envío con Dim_Date.Entidades: Mapea productos (Dim_Product) y tiendas (Dim_Store).Historial (SCD2): Mapea clientes (Dim_Customer) filtrando exclusivamente la versión activa (RecIsCurrent = 1).Maneja huérfanos con ISNULL(..., -1): Si una venta no encuentra coincidencia en las dimensiones, le asigna la clave -1 (el Special Member de "Desconocido") en lugar de dejar un valor nulo o perder la fila.Castea los tipos de datos: Fuerza la conversión de medidas numéricas (Quantity, UnitPrice, GrossAmount, etc.) para asegurar consistencia en la capa analítica.Audita la integridad de la carga: Ejecuta una consulta final que cuenta cuántas filas terminaron asignadas al ID -1, permitiendo detectar si existen códigos en ventas que no fueron registrados previamente en las dimensiones.
 
 ### 3.5 Declarar las constraints (no impuestas)
 
@@ -636,6 +649,8 @@ ALTER TABLE gold.Fact_Sales ADD CONSTRAINT FK_Fact_Store
     FOREIGN KEY (Store_SK) REFERENCES gold.Dim_Store(Store_SK) NOT ENFORCED;
 GO
 ```
+
+![declaracion de constrains](end_2_end_img/1.5%20declara%20las%20constrains.png)
 
 > ℹ️ Solo se crea **una** FK hacia `Dim_Date` (la de `OrderDateKey`). La segunda relación, la de `ShipDateKey`, la definiremos en el semantic model como **relación inactiva** — es la esencia de la *role-playing dimension*.
 > 
