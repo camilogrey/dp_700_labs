@@ -721,6 +721,16 @@ GO
 > ⚠️ Ese `MAX(...) + 1` funciona para un lote pequeño como el de la práctica. Con volúmenes reales, genera la clave con `ROW_NUMBER() OVER (...) + (SELECT ISNULL(MAX(Product_SK),0) FROM ...)` en una tabla intermedia, o usa una columna `IDENTITY`.
 > 
 
+![Automatizacion carga incremental](end_2_end_img/4.1%20Automatiza%20la%20carga%20incremental%20Crea%20un%20procedimiento%20almacenado%20actualizada%20la%20dimensión%20de%20productos%20sin%20necesidad%20de%20recargar%20toda%20la%20tabla%20desde%20cero..png)
+
+**NOta**Automatiza la carga incremental: Crea un procedimiento almacenado (gold.sp_Load_Dim_Product) para mantener actualizada la dimensión de productos sin necesidad de recargar toda la tabla desde cero.
+
+Implementa la lógica SCD Tipo 1 (Sobrescritura): Utiliza la sentencia MERGE comparando por la clave natural (ProductCode):
+
+Si el producto ya existe (WHEN MATCHED) y tuvo cambios en sus datos (nombre, categoría, precio, etc.), sobrescribe los valores antiguos con los nuevos y actualiza la fecha de modificación (RecUpdatedDate). No guarda historial de precios o nombres pasados.
+
+Si el producto es nuevo (WHEN NOT MATCHED BY TARGET), lo inserta al final asignándole una nueva clave subrogada (Product_SK) calculada a partir del MAX(Product_SK) + 1.
+
 ### 4.2 SCD tipo 2 en dos operaciones
 
 Recuerda la lógica de la Clase : **UPDATE que expira la versión vigente + INSERT de la nueva versión**.
@@ -775,6 +785,16 @@ GO
 > 🎯 El `WHERE NOT EXISTS` cubre **los dos casos a la vez**: clientes nuevos (nunca existieron) y clientes cuya versión acaba de expirarse en el paso 2. Es el patrón estándar de SCD tipo 2.
 > 
 
+![procedimiento de combinacion SC1 y SC2 de datos manteniendo su historia](end_2_end_img/4.2%20Este%20procedimiento%20gestiona%20la%20dimensión%20de%20clientes%20actualizando%20sin%20historial%20cambios%20en%20correo%20o%20segmento%20SCD%201%20y%20generando%20un%20nuevo%20registro%20histórico%20con%20fecha%20de%20vigencia%20si%20el%20cliente%20cambia%20de%20ciudad%20SCD%202.png)
+
+**NOta**Combina SCD Tipo 1 y Tipo 2 de forma híbrida: Actualiza datos del cliente manteniendo o no su historial según la columna que haya cambiado.
+
+Paso 1 (SCD Tipo 1 - Sin historial): Si cambian el Email o el Segment, sobrescribe los valores directamente en la versión activa actual (RecIsCurrent = 1).
+
+Paso 2 (SCD Tipo 2 - Expira registro): Si cambia la ciudad (City), cierra la vigencia del registro actual poniendo RecIsCurrent = 0 y la fecha de fin (RecEndDate) como la fecha de hoy.
+
+Paso 3 (SCD Tipo 2 y Nuevos Clientes - Inserta registro activo): Inserta un nuevo registro con una clave subrogada nueva (Customer_SK), la nueva ciudad, RecStartDate = @Hoy, RecEndDate = '9999-12-31' y RecIsCurrent = 1. También aplica para clientes completamente nuevos.
+
 ### 4.3 Carga incremental del fact
 
 ```sql
@@ -806,6 +826,9 @@ BEGIN
 END;
 GO
 ```
+![automatiza la carga incremental](end_2_end_img/4.3%20automatiza%20la%20carga%20incremental%20e%20idempotente%20de%20la%20tabla%20de%20hechos%20FactSales%20insertando%20solo%20las%20nuevas%20ventas%20registradas%20en%20Silver%20y%20resolviendo%20sus%20claves%20subrogadas%20vigentes%20sin%20duplicar%20pedidos.png)
+
+**NOta**
 
 ### 4.4 Ejercicio: provocar un cambio SCD tipo 2
 
@@ -822,9 +845,21 @@ Vamos a simular que **Ana García se muda de Madrid a Zaragoza**.
     print("Cliente C001 movido a Zaragoza")
     ```
     
+![simulacion de modificacion de datos](end_2_end_img/4.4.1%20Este%20código%20modifica%20la%20ciudad%20del%20cliente%20C001%20a%20Zaragoza%20en%20la%20capa%20Silver%20para%20probar%20si%20el%20procedimiento%20de%20la%20capa%20Gold%20procesa%20correctamente%20la%20logica%20de%20SCD%20Tipo%202.png)
+
+**NOTA**Este código simula una modificación de datos en el sistema de origen actualizando la ciudad del cliente C001 a "Zaragoza" dentro de la tabla Delta dim_cliente_src.
+
+Lee los datos: Carga la tabla dim_cliente_src de la capa Silver en un DataFrame de PySpark.
+
+Aplica el cambio: Evalúa cada registro y, si el CustomerCode es igual a "C001", reemplaza su valor en la columna City por "Zaragoza"; los demás clientes conservan su ciudad original.
+
+Guarda y sobrescribe: Reescribe la tabla en formato Delta sobre la capa Silver con la información actualizada.
+
+Propósito en el ejercicio: Generar un cambio controlado en la fuente (Silver) para poner a prueba el procedimiento sp_Load_Dim_Customer en Gold y confirmar que procesa correctamente la lógica de SCD Tipo 2 (cerrando la vigencia de la fila antigua y creando una nueva).
+
 2. En `WH_Gold`, ejecuta el procedimiento y comprueba el resultado:
     
-    ```sql
+img_dataflowgen2    ```sql
     EXEC gold.sp_Load_Dim_Customer;
     
     SELECT Customer_SK, CustomerCode, FullName, City,
@@ -833,7 +868,20 @@ Vamos a simular que **Ana García se muda de Madrid a Zaragoza**.
     WHERE CustomerCode = 'C001'
     ORDER BY RecStartDate;
     ```
-    
+
+![ejecuta la actualizacion incremental](end_2_end_img/4.4.2%20Ejecuta%20el%20procesamiento%20incremental%20en%20Gold%20y%20consulta%20la%20dimensión%20para%20verificar%20que%20el%20cliente%20C001%20registre%20correctamente%20el%20cambio%20de%20ciudad%20mediante%20el%20historial%20SCD%20Tipo%202.png)
+
+**NOTA** Ejecuta la actualización incremental: Llama al procedimiento sp_Load_Dim_Customer en la capa Gold para procesar los cambios detectados en la capa Silver.
+
+Consulta el historial de un cliente: Filtra la dimensión por CustomerCode = 'C001' ordenando los resultados por la fecha de inicio (RecStartDate).
+
+Valida el patrón SCD Tipo 2: Sirve para confirmar visualmente que el cliente C001 ahora tiene dos filas:
+
+Fila previa: La versión antigua con la ciudad original, RecIsCurrent = 0 y la fecha de fin (RecEndDate) actualizada.
+
+Fila nueva: La versión actual con la ciudad "Zaragoza", RecIsCurrent = 1, un nuevo Customer_SK y RecEndDate = '9999-12-31'.
+
+
     **Punto de control 5:** deben aparecer **dos filas** para C001:
     
     | Customer_SK | City | RecStartDate | RecEndDate | RecIsCurrent |
@@ -854,6 +902,13 @@ Vamos a simular que **Ana García se muda de Madrid a Zaragoza**.
     GROUP BY c.City, c.RecIsCurrent;
     ```
     
+![Consulta de verificacion agrupacion y suma las ventas del cliente](end_2_end_img/4.4.3%20Agrupa%20y%20suma%20las%20ventas%20del%20cliente%20C001%20por%20ciudad%20para%20confirmar%20que%20las%20compras%20pasadas%20se%20mantienen%20vinculadas%20a%20su%20ubicacion%20historica%20y%20no%20a%20la%20actual.png)
+
+**NOTA**Verifica la integridad histórica del modelo estrella: Agrupa las ventas de la tabla de hechos por la ciudad y el estado de vigencia (RecIsCurrent) del cliente C001.
+
+Demuestra el valor del SCD Tipo 2: Confirma que las ventas antiguas no sufren update cascade, sino que se mantienen vinculadas a la clave subrogada (Customer_SK) del registro expirado (cuando el cliente vivía en su ciudad anterior, p. ej., Madrid).
+
+Muestra la distribución del negocio: Mide el volumen de líneas de venta (COUNT(*)) y el total recaudado (SUM(NetAmount)) asociando cada transacción a la ubicación real que tenía el cliente al momento de realizar la compra.
 
 > 💡 **La lección clave:** el histórico se ha preservado. Las ventas anteriores a la mudanza siguen agregándose bajo Madrid, y solo las nuevas irán a Zaragoza. Con SCD tipo 1 habríamos reescrito la historia: todas las ventas de Ana aparecerían bajo Zaragoza como si siempre hubiera vivido allí.
 > 
@@ -866,6 +921,9 @@ Vamos a simular que **Ana García se muda de Madrid a Zaragoza**.
 ### 5.1 Construir el pipeline
 
 1. **New item → pipeline** → nombre `PL_Medallion`.
+
+![creacion de item de pipeline](end_2_end_img/5.1%20creacion%20de%20item%20pipeline%20e%20inicio%20de%20creacion%20de%20actividades.png)
+
 2. Añade las actividades **en este orden**, conectando cada una a la siguiente con la flecha verde (**On success**):
     
     
@@ -877,7 +935,14 @@ Vamos a simular que **Ana García se muda de Madrid a Zaragoza**.
     | 4 | **Stored procedure** | `gold.sp_Load_Dim_Customer` |
     | 5 | **Stored procedure** | `gold.sp_Load_Fact_Sales` |
     | 6 | **Semantic model refresh** | Workspace + `SM_Ventas` *(se configura tras la parte 6)* |
-    | 7 | **Outlook** o **Teams** | Notificación de fin de carga |
+
+![declaracion de constrains](end_2_end_img/5.2%20Inicio%20de%20creacion%20de%20actividades%20on%20success.png)
+![selecion de un notebook](end_2_end_img/5.3%20seleccionar%20el%20notebook%20correspondiente.png)
+![conectar un notebook on success](end_2_end_img/5.4%20Añadir%202do%20notebbok%20y%20conectar%20ON%20success%20notebook%201%20con%20Notebook%202.png)
+![creacion de store procedure](end_2_end_img/5.5%20Crear%20un%20store%20procedure%20dentro%20del%20pipeline.png)
+![pipeline provisional](end_2_end_img/5.6%20Pipeline%20provisional%20.png)
+
+
 3. **Home → Save**, luego **Run**.
     
     **Punto de control 6:** las siete actividades en verde en la pestaña **Output**.
