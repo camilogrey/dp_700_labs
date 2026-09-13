@@ -977,6 +977,8 @@ Muestra la distribución del negocio: Mide el volumen de líneas de venta (COUNT
 3. Selecciona las tablas: `Dim_Date`, `Dim_Product`, `Dim_Customer`, `Dim_Store`, `Fact_Sales`. **No incluyas la vista `Dim_Order`** por ahora.
 4. **OK** → se abre el modelado web.
 
+![creación del semantic model en WH_gold](end_2_end_img/6.1%20Creacion%20del%20semantic%20model%20en%20la%20capa%20gold.png)
+
 > 🔷 Al crear el modelo desde un Warehouse o desde un SQL analytics endpoint, obtienes **Direct Lake on SQL**. Si lo crearas desde el propio lakehouse o desde el OneLake catalog, obtendrías **Direct Lake on OneLake**. La diferencia está en cómo se resuelve la seguridad y el acceso a los datos.
 > 
 
@@ -995,6 +997,10 @@ En la vista de modelo, arrastra las claves para crear:
 > ⭐ **Aquí está la role-playing dimension.** Power BI solo permite **una relación activa** entre dos tablas. La segunda queda inactiva y se activa puntualmente con `USERELATIONSHIP` dentro de una medida.
 > 
 
+![Establecer relaciones en el semantic model](end_2_end_img/6.2%20establecer%20relaciones%20del%20semantin%20model%20.png)
+![Desactivar una segunda relacion dado que no es permitiudo](end_2_end_img/6.2.2%20deseleccionar%20para%20establecer%20una%20segunda%20relacion%20dado%20que%20fabroc%20no%20permite%20doble%20realcion%20.png)
+
+
 ### 6.3 Higiene del modelo
 
 Estas tareas parecen cosméticas pero se preguntan en el examen:
@@ -1004,6 +1010,14 @@ Estas tareas parecen cosméticas pero se preguntan en el examen:
 3. **Ocultar las columnas numéricas del fact** (`Quantity`, `NetAmount`, …) una vez creadas las medidas, para forzar el uso de las medidas. (haremos esto después de crear las medidas DAX, para no perder de vista los campos mientras las escribes)
 4. **Crear la jerarquía de fecha:** en `Dim_Date`, jerarquía `Calendario` con niveles `Year → QuarterName → MonthName → Day`.
 5. **Ordenar los meses:** selecciona `MonthName` → **Sort by column** → `Month`. Si no, los meses se ordenan alfabéticamente.
+
+![Marca la tabla como fecha](end_2_end_img/6.3.1%20marcar%20la%20table%20como%20fecha%20.png)
+![Ocultar columnas Key y REc](end_2_end_img/6.3.2%20Ocultar%20las%20columnas%20key%20y%20rec%20campos%20técnicos%20de%20auditoría%20y%20control%20de%20carga.png)
+![Crear jerarquias en Dimdate](end_2_end_img/6.3.3%20crear%20jerarquia%20en%20dimdate%20en%20año%20y%20otras%20columnas.png)
+![Configurar jeraquia](end_2_end_img/6.3.4%20configurara%20jerarquia%20nombre%20calendario%20y%20añadir%20caracteristicas%20de%20la%20jerarquia.png)
+![Ordenar la columna monthdate de Dimdate](end_2_end_img/6.3.5%20ordenal%20la%20columna%20monthname%20por%20meses%20en%20propiedades.png)
+
+
 
 > 🔷 **Recordatorio Direct Lake:** este modelo **no admite columnas calculadas**. Cualquier atributo que necesites para filtrar o agrupar tiene que existir ya en las tablas Gold. Por eso creamos `YearMonth`, `QuarterName`, `DayName` e `IsWeekend` en T-SQL y no en DAX.
 > 
