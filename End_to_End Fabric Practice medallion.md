@@ -1216,12 +1216,23 @@ Desde `SM_Ventas` → New **report → Start from scratch**. Nombre: `RPT_Ventas
     - Pulsa **Sign in** y autentica con tu cuenta de Microsoft/organización (la misma que usas en Fabric).
     - **Privacy Level**: `None` (o el que prefieras).
     - Pulsa **Connect**.
+
+![Establecer la conexion del semantic model refresh](end_2_end_img/7.1%20semantic%20model%20refresh%20en%20conexion%20browse%20all.png)
+
+
+![Seleccionar el POwer BI semantic model](end_2_end_img/7.1.1%20select%20power%20bi%20semantic%20model.png)
+
+![Realizar el sign in con la cuenta de fabric](end_2_end_img/7.1.2%20sign%20in.png)
+
+
 7. De vuelta en el pipeline, en **Settings**, verifica que queden rellenos los cuatro campos:
     - **Connection**: la conexión recién creada (`PowerBIDatasets <tu_usuario>`)
     - **Workspace**: `WS-DP600-Lab`
     - **Semantic model**: `SM_Ventas`
     - **Table(s)**: déjalo vacío (`No results found`) para que sea un full refresh de todo el modelo.
 
+
+![Finalizar el setting](end_2_end_img/7.1.3%20fianlizando%20el%20setting%20.png)
 ---
 
 **Actividad 7 — Notificación con Office 365 Outlook (Legacy)**
