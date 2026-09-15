@@ -1293,11 +1293,23 @@ Desde `SM_Ventas` → New **report → Start from scratch**. Nombre: `RPT_Ventas
 3. El pipeline se ejecuta de principio a fin (las 7 actividades). Puedes seguir el progreso en el panel inferior **Output**, con auto-refresh activo.
 4. Al terminar, revisa que las 7 actividades queden en verde (`Succeeded`), y comprueba tu bandeja de entrada de Outlook para confirmar que llegó el correo de notificación.
 
-![image.png](7.2)
+![image.png](end_2_end_img/8.%20Inicio%20de%20pipeline.png)
 
-![image.png](7.2.0)
+![image.png](end_2_end_img/8.1%20error%20en%20la%20actividad%20de%20limpieza.png)
 
-![image.png](7.2.1)
+![image.png](end_2_end_img/8.3%20se%20debe%20activar%20alta%20concurrencia%20en%20el%20workspace.png)
+
+![image.png](end_2_end_img/8.4%20detener%20la%20sesion%20de%20spark%20de%20la%20ingesta%20.png)
+
+![image.png](end_2_end_img/8.5%20los%20mismo%20con%20el%20notebbok%20de%20lmpieza.png)
+
+![image.png](end_2_end_img/8.6.png)
+
+![image.png](end_2_end_img/8.7.png)
+
+![image.png](end_2_end_img/8.8.png)
+
+![image.png](end_2_end_img/8.9.png)
 
 ---
 
