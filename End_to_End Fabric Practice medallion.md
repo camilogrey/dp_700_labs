@@ -1138,6 +1138,16 @@ TOTALYTD ( [Ventas Netas], Dim_Date[FullDate] )
 > - `DiscountAmount`
 > - `NetAmount`
 
+![Comprobacion](end_2_end_img/6.4.1%20creacion%20de%20la%20tabla%20medidas,%20creacion%20de%20medidas%20y%20asegurar%20que%20la%20medida%20YoY%20%25%20(o%20%25%20Descuento)%20este%20en%20formato%20porcentaje%20.png)
+
+![Comprobacion](end_2_end_img/6.4.2%20creacion%20de%20la%20ultima%20medida%20Ventas%20Netas%20YTD%20de%20la%20tabla%20Medidas.png)
+
+![Comprobacion](end_2_end_img/6.3.3%20crear%20jerarquia%20en%20dimdate%20en%20año%20y%20otras%20columnas.png)
+
+![Comprobacion](end_2_end_img/6.4.4%20A%20estas%20medidas%20ponerle%201%20decimal.png)
+
+![Comprobacion](end_2_end_img/6.4.5%20a%20estos%20ponerle%20formato%20numeor%20entero.png)
+
 ### 6.5 Validación cruzada
 
 Comprueba que el modelo devuelve lo mismo que el warehouse. En `WH_Gold`:
@@ -1150,6 +1160,9 @@ SELECT
     SUM(DiscountAmount) / SUM(GrossAmount) AS PctDescuento
 FROM gold.Fact_Sales;
 ```
+
+![Comprobacion](end_2_end_img/6.5.png)
+![Comprobacion](end_2_end_img/6.5.1%20reporte%20Power%20BI%20comprobacion%20con%20la%20capa%20WH_gold.png)
 
 **Punto de control 7:** los cuatro valores deben coincidir con las medidas DAX en una tarjeta sin filtros.
 
@@ -1174,6 +1187,8 @@ Desde `SM_Ventas` → New **report → Start from scratch**. Nombre: `RPT_Ventas
 
 > Prueba el **drill-down** en la matriz: Year → Quarter → Month → Day. Esto solo funciona porque construimos la jerarquía en una **única tabla desnormalizada**. Si `Dim_Date` estuviera normalizada en snowflake, tendrías que crear una vista que la volviera a unir.
 > 
+![Pagina 1](end_2_end_img/pagina%203.png)
+
 
 ### 7.3 Página 2 — Logística (role-playing dimension)
 
@@ -1186,12 +1201,16 @@ Desde `SM_Ventas` → New **report → Start from scratch**. Nombre: `RPT_Ventas
 > 🎯 **Observa la diferencia entre las dos series.** Las mismas ventas, agrupadas por dos fechas distintas usando **una sola tabla física** `Dim_Date`. Eso es una role-playing dimension. Cambia el mes y verás cómo las barras se desplazan: los pedidos de finales de mes se envían el mes siguiente.
 > 
 
+![Pagina 2](end_2_end_img/pagina%202.png)
+
 ### 7.4 Página 3 — Efecto del SCD tipo 2
 
 | Visual | Campos |
 | --- | --- |
 | **Tabla** | `Dim_Customer[FullName]`, `Dim_Customer[City]`, `Ventas Netas`, `Nº Pedidos` |
 | **Segmentación** | `Dim_Customer[CustomerCode]` filtrado a `C001` |
+
+![Pagina 3](end_2_end_img/pagina%203.png)
 
 > 🔍 **Ana García aparece dos filas: Madrid y Zaragoza.** Sus ventas históricas se mantienen asignadas a Madrid. Este es exactamente el comportamiento que buscábamos, pero también explica por qué **no se debe aplicar SCD tipo 2 a todos los atributos**: el modelo se llena de versiones duplicadas de la misma entidad y los usuarios se confunden.
 > 
@@ -1240,7 +1259,7 @@ Desde `SM_Ventas` → New **report → Start from scratch**. Nombre: `RPT_Ventas
 1. En `PL_Medallion`, ve a la pestaña **Activities** → busca **"Outlook"** → añade la actividad **Office 365 Outlook (Legacy)** al lienzo.
 2. Conéctala arrastrando desde el icono verde ✓ (On success) de `Semantic model refresh` hasta este nuevo bloque.
 3. Selecciona el bloque → pestaña **Settings**.
-4. Pulsa **Sign in** para autenticar la conexión.
+4. Pulsa **Sign in** para autenticar la conexión.**
 5. Aparece la pantalla de confirmación de Microsoft (*"Confirmation required — This connection was created from a different organization than yours"*) — es el aviso estándar del conector oficial de Outlook en Fabric, no indica ningún problema de seguridad real si el flujo procede del propio pipeline. Marca **"I have verified this request and trust the source"** → **Allow access**.
 6. Con la sesión ya iniciada (verás *"Signed in as: tu_correo"*), rellena:
     - **To**: tu correo (para la práctica, tu propia dirección).
@@ -1248,16 +1267,22 @@ Desde `SM_Ventas` → New **report → Start from scratch**. Nombre: `RPT_Ventas
     - **Body**: un resumen del proceso, por ejemplo:
         
         ```
-             El pipeline PL_Medallion ha finalizado correctamente.
+             
+        ```
+        El pipeline PL_Medallion ha finalizado correctamente.
         
              Resumen de la carga:
              - Bronze: ingesta completada
              - Silver: limpieza y conformación completada
              - Gold: dimensiones y Fact_Sales cargados
              - Semantic model SM_Ventas actualizado (Direct Lake framing)
-        ```
-        
 7. Los campos de **Sensitivity** y **Advanced** (From, Cc, Bcc, Reply to, Importance) se dejan vacíos/por defecto — no son obligatorios.
+
+![image.png](end_2_end_img/7.2%20creando%20conexion%20al%20email.png)
+
+![image.png](end_2_end_img/7.2.0%20configuracion%20de%20envio%20Outlook%20legacy%20y%20envio%20de%20confirmacion.png)
+
+![image.png](end_2_end_img/7.2.1%20pipeline%20finalizado.png)
 
 ---
 
@@ -1268,11 +1293,11 @@ Desde `SM_Ventas` → New **report → Start from scratch**. Nombre: `RPT_Ventas
 3. El pipeline se ejecuta de principio a fin (las 7 actividades). Puedes seguir el progreso en el panel inferior **Output**, con auto-refresh activo.
 4. Al terminar, revisa que las 7 actividades queden en verde (`Succeeded`), y comprueba tu bandeja de entrada de Outlook para confirmar que llegó el correo de notificación.
 
-![image.png](image%201.png)
+![image.png](7.2)
 
-![image.png](image%202.png)
+![image.png](7.2.0)
 
-![image.png](image%203.png)
+![image.png](7.2.1)
 
 ---
 
